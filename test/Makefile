@@ -8,7 +8,7 @@ CFLAGS = -Wall -g -pthread
 TARGET = test
 
 # 源文件
-SRC = test_lock.c
+SRC = queue_performance.c
 
 # 默认目标
 all: $(TARGET)
