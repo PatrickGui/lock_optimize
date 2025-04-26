@@ -8,7 +8,7 @@ CFLAGS = -Wall -g -pthread
 TARGET = test
 
 # 源文件
-SRC = two_thread_deadlock.c
+SRC = test_lock.c
 
 # 默认目标
 all: $(TARGET)
