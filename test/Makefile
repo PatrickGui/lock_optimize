@@ -2,7 +2,7 @@
 CC = gcc
 
 # 编译选项
-CFLAGS = -Wall -g -pthread
+CFLAGS = -Wall -g -pthread -std=c11
 
 # 目标文件
 TARGET = test

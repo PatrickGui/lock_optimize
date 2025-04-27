@@ -61,31 +61,35 @@ void locked_queue_destroy(LockedQueue* q) {
 }
 
 // 无锁队列
-typedef struct LFNode {
+typedef struct LFNode LFNode;
+
+struct LFNode {
     int data;
-    atomic_ptr(struct LFNode) next;
-} LFNode;
+    _Atomic(LFNode*) next;
+};
 
 typedef struct {
-    atomic_ptr(LFNode) head;
-    atomic_ptr(LFNode) tail;
+    _Atomic(struct LFNode *) head;
+    _Atomic(struct LFNode *) tail;
 } LockFreeQueue;
 
 void lock_free_queue_init(LockFreeQueue* q) {
     LFNode* dummy = (LFNode*)malloc(sizeof(LFNode));
-    dummy->next = ATOMIC_VAR_INIT(NULL);
     atomic_store(&q->head, dummy);
     atomic_store(&q->tail, dummy);
+    atomic_store(&dummy->next, NULL);
 }
 
 void lock_free_queue_enqueue(LockFreeQueue* q, int value) {
     LFNode* new_node = (LFNode*)malloc(sizeof(LFNode));
     new_node->data = value;
-    new_node->next = ATOMIC_VAR_INIT(NULL);
+    atomic_store(&new_node->next, NULL);
     LFNode* old_tail;
+    LFNode* expected;
     do {
         old_tail = atomic_load(&q->tail);
-    } while (!atomic_compare_exchange_weak(&old_tail->next, NULL, new_node));
+        expected = atomic_load(&old_tail->next);
+    } while (!atomic_compare_exchange_weak(&old_tail->next, &expected, new_node));
     atomic_compare_exchange_strong(&q->tail, &old_tail, new_node);
 }
 
@@ -135,6 +139,15 @@ void* lock_free_queue_worker(void* arg) {
 }
 
 int main() {
+#if __STDC_VERSION__ >= 201112L
+    printf("C11 standard is enabled.\n");
+#elif __STDC_VERSION__ >= 199901L
+    printf("C99 standard is enabled.\n");
+#elif __STDC_VERSION__ >= 199409L
+    printf("C90 standard is enabled.\n");
+#else
+    printf("Pre-C90 standard is enabled.\n");
+#endif
     pthread_t threads[NUM_THREADS];
     struct timespec start, end;
 
@@ -171,4 +184,4 @@ int main() {
     printf("无锁队列：耗时 %lld 纳秒。\n", lock_free_time);
 
     return 0;
-}    
+}
